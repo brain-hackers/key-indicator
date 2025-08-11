@@ -1,0 +1,73 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - "ci-*"
+    tags:
+      - "*"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read VERSION file into env
+        id: version
+        run: |
+          echo "VERSION=$(cat VERSION)" >> "$GITHUB_ENV"
+
+      - name: Build inside Debian bullseye container
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            debian:bookworm \
+            bash -lc '
+              set -euo pipefail
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update
+              dpkg --add-architecture armel
+              apt-get update
+              apt-get install -y --no-install-recommends \
+                build-essential \
+                gcc-arm-linux-gnueabi \
+                libx11-dev \
+                libc6-dev:armel \
+                libx11-dev:armel \
+                file \
+                ca-certificates
+              make TARGET=key-indicator CC=arm-linux-gnueabi-gcc CFLAGS="-Wall -Wextra -O2 -march=armv5tej"
+              file ./key-indicator || true
+              ls -l ./key-indicator || true
+            '
+
+      - name: Upload binary artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: key-indicator
+          path: key-indicator
+
+      - name: Install go-bin-deb (for packaging)
+        run: |
+          curl -L -o go-bin-deb-amd64.deb https://github.com/groove-x/go-bin-deb/releases/download/0.0.19%2Bgx10/go-bin-deb-amd64.deb
+          sudo dpkg -i go-bin-deb-amd64.deb || sudo apt-get -f install -y
+
+      - name: Generate Debian package (.deb)
+        run: |
+          go-bin-deb generate --arch armel --version "${{ env.VERSION }}"
+          ls -l *.deb
+
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          generate_release_notes: true
+          files: |
+            key-indicator
+            key-indicator_${{ env.VERSION }}_armel.deb

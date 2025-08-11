@@ -1,0 +1,20 @@
+{
+  "name": "key-indicator",
+  "maintainer": "Brain Hackers",
+  "files": [
+    {
+      "from": "!name!",
+      "to": "/usr/bin",
+      "fperm": "0755"
+    }
+  ],
+  "copyrights": [
+    {
+      "files": "*",
+      "copyright": "2025 Brain Hackers",
+      "license": "MIT",
+      "file": "LICENSE"
+    }
+  ],
+  "description": "Special key indicator in the system tray"
+}
