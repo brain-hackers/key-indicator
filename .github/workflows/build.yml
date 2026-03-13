@@ -55,12 +55,14 @@ jobs:
 
       - name: Install go-bin-deb (for packaging)
         run: |
-          curl -L -o go-bin-deb-amd64.deb https://github.com/groove-x/go-bin-deb/releases/download/0.0.19%2Bgx10/go-bin-deb-amd64.deb
-          sudo dpkg -i go-bin-deb-amd64.deb || sudo apt-get -f install -y
+          #curl -L -o go-bin-deb-amd64.deb https://github.com/groove-x/go-bin-deb/releases/download/0.0.19%2Bgx10/go-bin-deb-amd64.deb
+          #sudo dpkg -i go-bin-deb-amd64.deb || sudo apt-get -f install -y
+          curl -L -o go-bin-deb https://github.com/puhitaku/go-bin-deb/releases/download/puhitaku-feature-compression/go-bin-deb
+          chmod +x go-bin-deb
 
       - name: Generate Debian package (.deb)
         run: |
-          go-bin-deb generate --arch armel --version "${{ env.VERSION }}"
+          ./go-bin-deb generate --compression xz --arch armel --version "${{ env.VERSION }}"
           ls -l *.deb
 
       - name: Create GitHub Release and upload assets
